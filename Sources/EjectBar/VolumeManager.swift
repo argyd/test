@@ -16,14 +16,24 @@ enum VolumePolicy {
     }
 }
 
+struct VolumePreferences {
+    let automaticEject: Bool
+    let remountOnWake: Bool
+
+    init(defaults: UserDefaults = .standard) {
+        automaticEject = defaults.object(forKey: "automaticEject") as? Bool ?? true
+        remountOnWake = defaults.object(forKey: "remountOnWake") as? Bool ?? true
+    }
+}
+
 @MainActor
 final class VolumeManager: ObservableObject {
     @Published private(set) var volumes: [ExternalVolume] = []
     @Published private(set) var statusMessage: String?
     @Published private(set) var lastError: String?
 
-    private(set) var automaticEject = true
-    private(set) var remountOnWake = true
+    private(set) var automaticEject: Bool
+    private(set) var remountOnWake: Bool
     private var session: DASession?
     private var disksToRemount: [String: DADisk] = [:]
     private var workspaceObservers: [NSObjectProtocol] = []
@@ -33,6 +43,10 @@ final class VolumeManager: ObservableObject {
     }
 
     init() {
+        let preferences = VolumePreferences()
+        automaticEject = preferences.automaticEject
+        remountOnWake = preferences.remountOnWake
+
         session = DASessionCreate(kCFAllocatorDefault)
         if let session {
             DASessionSetDispatchQueue(session, DispatchQueue.main)
